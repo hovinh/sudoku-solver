@@ -129,6 +129,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+py3.10-sudoku/
 
 # Spyder project settings
 .spyderproject
