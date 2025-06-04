@@ -30,15 +30,19 @@ https://github.com/t-dillon/tdoku/tree/master/benchmarks
 
 
 Data
-- grid 9x9
 - candidate map? calculating blueprint, only confirm then update the grid
-- represent candidate of grid 9x9x10 using boolean.
-- number of candidate in cell
 - sudoku line check: rows, columns.
 - sudoku square check 3x3 box
+- log sudoku or print own
+- clean up > solve -> backtrack
+
+Done: 
 - a way to map coordinate to which row, cell, or box
 - box = row /3 *3 + col/3
+- number of candidate in cell
 
+Not applicable:
+- represent candidate of grid 9x9x10 using boolean.
 Solving puzzle
 
 
