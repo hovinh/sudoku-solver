@@ -12,7 +12,7 @@ def has_col_divider(col_id: int) -> bool:
 
 
 class SudokuCell(object):
-    def __init__(self, row_id: int, col_id: int, value: int = 0) -> None:
+    def __init__(self, row_id: int, col_id: int, value: int = constant.UNFILLED_VALUE) -> None:
         """
         Initializes SudokuCell instance.
 
@@ -31,7 +31,8 @@ class SudokuCell(object):
         else:
             raise TypeError(f"Type of value is {type(value)}. Must be int.")
         self._candidates = (
-            [self.value] if self.is_filled() else constant.POSSIBLE_CELL_VALUE.copy()
+            [self.value] if self.is_solved(
+            ) else constant.DEFAULT_POSSIBLE_CELL_VALUE.copy()
         )
 
     @property
@@ -48,9 +49,9 @@ class SudokuCell(object):
 
     @value.setter
     def value(self, new_value: int) -> None:
-        if new_value not in constant.POSSIBLE_CELL_VALUE:
+        if new_value not in constant.DEFAULT_POSSIBLE_CELL_VALUE:
             raise ValueError(
-                f"Value {new_value} is invalid. Must be in {constant.POSSIBLE_CELL_VALUE}"
+                f"Value {new_value} is invalid. Must be in {constant.DEFAULT_POSSIBLE_CELL_VALUE}"
             )
         self._value = new_value
 
@@ -59,15 +60,15 @@ class SudokuCell(object):
         return self._candidates
 
     @property
-    def numb_candidates(self):
+    def number_of_candidates(self):
         return len(self._candidates)
 
-    def is_filled(self):
+    def is_solved(self):
         return self.value != constant.UNFILLED_VALUE
 
     @property
     def solution(self):
-        return None if self.n_candidates > 1 else self.candidates[0]
+        return None if self.number_of_candidates > 1 else self.candidates[0]
 
     def __str__(self):
         return f"(value: {self._value}, row_id: {self._row_id}, col_id: {self._col_id})"
@@ -183,11 +184,28 @@ class SudokuProblem(object):
         self.boxes = self.__setup_boxes()
 
     def __setup_grid(self, sudoku_string: str):
+        """
+        Creates a 2D array of SudokuCell objects from a flat string representation of the Sudoku grid.
+
+        Parameters
+        ----------
+        sudoku_string : str
+            A string of length 81 containing the Sudoku puzzle to be solved.
+            The string should be a flat representation of the Sudoku grid,
+            with each character representing the value of the cell in the
+            order of row-major order.
+
+        Returns
+        -------
+        np.array
+            A 2D array of SudokuCell objects representing the cells in the Sudoku grid.
+        """
         str_id = 0
         grid = list()
-        for row_id in range(constant.N_ROWS):
+        # Create cells row by row
+        for row_id in range(1, constant.NUMB_ROWS+1, 1):
             row = list()
-            for col_id in range(constant.N_COLUMNS):
+            for col_id in range(1, constant.NUMB_COLUMNS+1, 1):
                 cell_value = int(sudoku_string[str_id])
                 cell = SudokuCell(row_id, col_id, cell_value)
                 row.append(cell)
@@ -196,36 +214,68 @@ class SudokuProblem(object):
         return np.array(grid)
 
     def __setup_rows(self) -> np.array:
+        """
+        Creates an array of SudokuRow objects from the Sudoku grid.
+
+        Returns
+        -------
+        np.array
+            An array of SudokuRow objects representing the rows in the Sudoku grid.
+        """
+        OFFSET_ROW = [None]
         rows = np.array(
-            [SudokuRow(self.grid[row_id, :]) for row_id in range(constant.N_ROWS)]
+            OFFSET_ROW +
+            [SudokuRow(self.grid[row_id, :])
+             for row_id in range(constant.NUMB_ROWS)]
         )
         return rows
 
     def __setup_cols(self) -> np.array:
+        """
+        Creates an array of SudokuColumn objects from the Sudoku grid.
+
+        Returns
+        -------
+        np.array
+            An array of SudokuColumn objects representing the columns in the Sudoku grid.
+        """
+        OFFSET_COL = [None]
         cols = np.array(
-            [SudokuColumn(self.grid[:, col_id]) for col_id in range(constant.N_COLUMNS)]
+            OFFSET_COL +
+            [SudokuColumn(self.grid[:, col_id])
+                for col_id in range(constant.NUMB_COLUMNS)
+             ]
         )
         return cols
 
     def __setup_boxes(self) -> np.array:
-        boxes = list()
-        for box_id in range(constant.N_BOXES):
+        """
+        Creates an array of SudokuBox objects from the Sudoku grid.
+
+        Returns
+        -------
+        np.array
+            An array of SudokuBox objects representing the boxes in the Sudoku grid.
+        """
+        boxes = list([None])  # Offset index by 1
+        for box_id in range(constant.NUMB_BOXES):
             start_row_id = (box_id // constant.BOX_WIDTH) * constant.BOX_WIDTH
             end_row_id = start_row_id + 3
             start_col_id = (box_id % constant.BOX_WIDTH) * constant.BOX_WIDTH
             end_col_id = start_col_id + 3
-            box = SudokuBox(self.grid[start_row_id:end_row_id, start_col_id:end_col_id])
+            box = SudokuBox(
+                self.grid[start_row_id:end_row_id, start_col_id:end_col_id])
             boxes.append(box)
         return boxes
 
     def __str__(self) -> str:
         text_str = ""
         last_col_id = 8
-        for row_id in range(constant.N_ROWS):
+        for row_id in range(constant.NUMB_ROWS):
             if has_row_divider(row_id):
                 text_str += constant.ROW_DIVIDER
 
-            for col_id in range(constant.N_COLUMNS):
+            for col_id in range(constant.NUMB_COLUMNS):
                 if has_col_divider(col_id):
                     text_str += "| "
                 cell = self.grid[row_id, col_id]
@@ -237,8 +287,118 @@ class SudokuProblem(object):
         return text_str
 
     def __getitem__(self, index: Tuple[int, int]) -> SudokuCell:
+        """
+        Returns a SudokuCell object at the given index.
+
+        Parameters
+        ----------
+        index : Tuple[int, int]
+            A tuple of two integers, representing the row and column indices of the cell in the grid.
+
+        Returns
+        -------
+        SudokuCell
+            The SudokuCell object at the given index.
+
+        Raises
+        ------
+        TypeError
+            If the index is not a tuple of two integers.
+
+        Examples
+        --------
+        >>> sudoku_problem = SudokuProblem(sudoku_string)
+        >>> cell = sudoku_problem[0, 0]
+        >>> cell
+        SudokuCell(value=5, row_id=0, col_id=0)
+        """
         if isinstance(index, tuple) and len(index) == 2:
             i, j = index
             return self.grid[i, j]
         else:
             raise TypeError("Invalid index. Use obj[i, j] syntax.")
+
+    def count_solved_cells(self) -> int:
+        """
+        Counts the number of solved cells in the Sudoku grid.
+
+        Returns
+        -------
+        int
+            The number of solved cells in the Sudoku grid.
+        """
+        count = 0
+        for row in self.grid:
+            for cell in row:
+                if cell.is_solved():
+                    count += 1
+        return count
+
+    def to_box_id(self, row_id: int, col_id: int) -> int:
+        """
+        Converts row and column indices to box index.
+
+        Parameters
+        ----------
+        row_id : int
+            The row index of the cell in the grid.
+        col_id : int
+            The column index of the cell in the grid.
+
+        Returns
+        -------
+        int
+            The box index of the cell in the grid.
+        """
+        box_row = (row_id - 1) // constant.BOX_WIDTH
+        box_col = (col_id - 1) // constant.BOX_WIDTH
+        offset = 1  # To make box_id start from 1
+        box_id = box_row * constant.BOX_WIDTH + box_col + offset
+
+        # raise error if box_id is out of range
+        if box_id < 1 or box_id > constant.NUMB_BOXES:
+            raise ValueError(
+                f"Box ID {box_id} is out of range. Must be between 1 and {constant.NUMB_BOXES}."
+            )
+
+        return box_id
+
+    def prune_candidates(self) -> None:
+        """
+        Prunes the candidates for each cell in the Sudoku box/column/row that contained the solved cell.
+
+        Returns
+        -------
+        None
+        """
+        for row in self.grid:
+            for cell in row:
+                if cell.is_solved():
+                    solved_value = cell.value
+                    row_id = cell.row_id
+                    col_id = cell.col_id
+
+                    # Prune candidates in the same row
+                    for peer_cell in self.rows[row_id]:
+                        if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
+                            peer_cell.candidates.remove(solved_value)
+
+                    # Prune candidates in the same column
+                    for peer_cell in self.cols[col_id]:
+                        if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
+                            peer_cell.candidates.remove(solved_value)
+
+                    # Prune candidates in the same box
+                    box_row_start = (
+                        row_id // constant.BOX_WIDTH) * constant.BOX_WIDTH
+                    box_col_start = (
+                        col_id // constant.BOX_WIDTH) * constant.BOX_WIDTH
+                    box_id = (box_row_start // constant.BOX_WIDTH) * \
+                        constant.BOX_WIDTH + \
+                        (box_col_start // constant.BOX_WIDTH)
+                    for i in range(constant.BOX_WIDTH):
+                        for j in range(constant.BOX_WIDTH):
+                            peer_cell = self.boxes[box_id][i, j]
+                            if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
+
+                                peer_cell.candidates.remove(solved_value)
