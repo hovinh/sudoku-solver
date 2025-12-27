@@ -70,6 +70,12 @@ class SudokuCell(object):
     def solution(self):
         return None if self.number_of_candidates > 1 else self.candidates[0]
 
+    def remove_candidate(self, value: int) -> None:
+        if value in self._candidates:
+            self._candidates.remove(value)
+        if self.number_of_candidates == 1:
+            self._value = self._candidates[0]
+
     def __str__(self):
         return f"(value: {self._value}, row_id: {self._row_id}, col_id: {self._col_id})"
 
@@ -371,6 +377,10 @@ class SudokuProblem(object):
         -------
         None
         """
+
+        def is_not_solved_and_contains_prunable_value(cell: SudokuCell, value: int) -> bool:
+            return (not cell.is_solved()) and (value in cell.candidates)
+
         for row in self.grid:
             for cell in row:
                 if cell.is_solved():
@@ -380,25 +390,33 @@ class SudokuProblem(object):
 
                     # Prune candidates in the same row
                     for peer_cell in self.rows[row_id]:
-                        if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
-                            peer_cell.candidates.remove(solved_value)
+                        if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                            peer_cell.remove_candidate(solved_value)
 
                     # Prune candidates in the same column
                     for peer_cell in self.cols[col_id]:
-                        if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
-                            peer_cell.candidates.remove(solved_value)
+                        if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                            peer_cell.remove_candidate(solved_value)
 
                     # Prune candidates in the same box
-                    box_row_start = (
-                        row_id // constant.BOX_WIDTH) * constant.BOX_WIDTH
-                    box_col_start = (
-                        col_id // constant.BOX_WIDTH) * constant.BOX_WIDTH
-                    box_id = (box_row_start // constant.BOX_WIDTH) * \
-                        constant.BOX_WIDTH + \
-                        (box_col_start // constant.BOX_WIDTH)
+                    box_id = self.to_box_id(row_id, col_id)
                     for i in range(constant.BOX_WIDTH):
                         for j in range(constant.BOX_WIDTH):
                             peer_cell = self.boxes[box_id][i, j]
-                            if not peer_cell.is_solved() and solved_value in peer_cell.candidates:
+                            if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                                peer_cell.remove_candidate(solved_value)
 
-                                peer_cell.candidates.remove(solved_value)
+    def count_all_candidates(self) -> int:
+        """
+        Counts the total number of candidates across all cells in the Sudoku grid.
+
+        Returns
+        -------
+        int
+            The total number of candidates across all cells in the Sudoku grid.
+        """
+        total_candidates = 0
+        for row in self.grid:
+            for cell in row:
+                total_candidates += cell.number_of_candidates
+        return total_candidates
