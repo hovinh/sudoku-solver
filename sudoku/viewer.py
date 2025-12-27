@@ -29,7 +29,7 @@ class SudokuViewer(object):
                 sudoku_cell = sudoku_problem[row_id, col_id]
                 cell_view = constant.CELL_IS_NOT_FILLED_TEMPLATE.copy()
                 if sudoku_cell.is_solved():
-                    cell_view[constant.FILLED_INDEX] = sudoku_cell.value
+                    cell_view[1, :] = ['(', sudoku_cell.value, ')']
                 else:
                     # Extract candidates to show in the cell view
                     cell_view = np.array(
