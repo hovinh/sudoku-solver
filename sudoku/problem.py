@@ -76,6 +76,11 @@ class SudokuCell(object):
         if self.number_of_candidates == 1:
             self._value = self._candidates[0]
 
+    def remove_all_candidates_except(self, value: int) -> None:
+        if value in self._candidates:
+            self._candidates = [value]
+            self._value = value
+
     def __str__(self):
         return f"(value: {self._value}, row_id: {self._row_id}, col_id: {self._col_id})"
 
@@ -94,6 +99,34 @@ class SudokuSequence(object):
 
     def __getitem__(self, index: int) -> SudokuCell:
         return self._cells[index]
+
+    def get_unique_candidate_in_sequence(self) -> List[Tuple[SudokuCell, int]]:
+        """
+        Finds candidates that appear only once in the sequence.
+
+        Returns
+        -------
+        List[Tuple[SudokuCell, int]]
+            A list of tuples containing the SudokuCell and its unique candidate value.
+        """
+        candidate_count = dict()
+        candidate_cell_map = dict()
+
+        for cell in self._cells:
+            for candidate in cell.candidates:
+                if candidate in candidate_count:
+                    candidate_count[candidate] += 1
+                else:
+                    candidate_count[candidate] = 1
+                    candidate_cell_map[candidate] = cell
+
+        unique_candidates = [
+            (candidate_cell_map[candidate], candidate)
+            for candidate, count in candidate_count.items()
+            if count == 1
+        ]
+
+        return unique_candidates
 
 
 class SudokuRow(SudokuSequence):
@@ -165,6 +198,36 @@ class SudokuBox(object):
             row_cells = self._cells[row_id, :]
             text_str += " ".join([f"{cell}" for cell in row_cells]) + "\n"
         return text_str
+
+    def get_unique_candidate_in_sequence(self) -> List[Tuple[SudokuCell, int]]:
+        """
+        Finds candidates that appear only once in the box.
+
+        Returns
+        -------
+        List[Tuple[SudokuCell, int]]
+            A list of tuples containing the SudokuCell and its unique candidate value.
+        """
+        candidate_count = dict()
+        candidate_cell_map = dict()
+
+        for i in range(constant.BOX_WIDTH):
+            for j in range(constant.BOX_WIDTH):
+                cell = self._cells[i, j]
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = cell
+
+        unique_candidates = [
+            (candidate_cell_map[candidate], candidate)
+            for candidate, count in candidate_count.items()
+            if count == 1
+        ]
+
+        return unique_candidates
 
 
 class SudokuProblem(object):
@@ -369,7 +432,7 @@ class SudokuProblem(object):
 
         return box_id
 
-    def prune_candidates(self) -> None:
+    def prune_candidates_comprehensively(self) -> None:
         """
         Prunes the candidates for each cell in the Sudoku box/column/row that contained the solved cell.
 
@@ -378,33 +441,50 @@ class SudokuProblem(object):
         None
         """
 
+        for row in self.grid:
+            for cell in row:
+                self.prune_candidates_from_row_column_box(cell)
+
+    def prune_candidates_from_row_column_box(self, cell: SudokuCell) -> None:
+        """
+        Prunes the candidates for each cell in the Sudoku box/column/row that contained the given cell.
+
+        Parameters
+        ----------
+        cell : SudokuCell
+            The SudokuCell object whose value will be used to prune candidates from its peers.
+
+        Returns
+        -------
+        None
+        """
         def is_not_solved_and_contains_prunable_value(cell: SudokuCell, value: int) -> bool:
             return (not cell.is_solved()) and (value in cell.candidates)
 
-        for row in self.grid:
-            for cell in row:
-                if cell.is_solved():
-                    solved_value = cell.value
-                    row_id = cell.row_id
-                    col_id = cell.col_id
+        if not cell.is_solved():
+            return
 
-                    # Prune candidates in the same row
-                    for peer_cell in self.rows[row_id]:
-                        if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
-                            peer_cell.remove_candidate(solved_value)
+        solved_value = cell.value
+        row_id = cell.row_id
+        col_id = cell.col_id
 
-                    # Prune candidates in the same column
-                    for peer_cell in self.cols[col_id]:
-                        if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
-                            peer_cell.remove_candidate(solved_value)
+        # Prune candidates in the same row
+        for peer_cell in self.rows[row_id]:
+            if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                peer_cell.remove_candidate(solved_value)
 
-                    # Prune candidates in the same box
-                    box_id = self.to_box_id(row_id, col_id)
-                    for i in range(constant.BOX_WIDTH):
-                        for j in range(constant.BOX_WIDTH):
-                            peer_cell = self.boxes[box_id][i, j]
-                            if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
-                                peer_cell.remove_candidate(solved_value)
+        # Prune candidates in the same column
+        for peer_cell in self.cols[col_id]:
+            if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                peer_cell.remove_candidate(solved_value)
+
+        # Prune candidates in the same box
+        box_id = self.to_box_id(row_id, col_id)
+        for i in range(constant.BOX_WIDTH):
+            for j in range(constant.BOX_WIDTH):
+                peer_cell = self.boxes[box_id][i, j]
+                if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                    peer_cell.remove_candidate(solved_value)
 
     def count_all_candidates(self) -> int:
         """
@@ -420,3 +500,35 @@ class SudokuProblem(object):
             for cell in row:
                 total_candidates += cell.number_of_candidates
         return total_candidates
+
+    def apply_hidden_single_strategy(self) -> None:
+        """
+        Applies the hidden single strategy to the Sudoku grid.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for hidden singles
+        for row in self.rows[1:]:
+            unique_candidates: List[Tuple[SudokuCell, int]
+                                    ] = row.get_unique_candidate_in_sequence()
+            for cell, candidate in unique_candidates:
+                cell.remove_all_candidates_except(candidate)
+                self.prune_candidates_from_row_column_box(cell)
+
+        # Check columns for hidden singles
+        for col in self.cols[1:]:
+            unique_candidates: List[Tuple[SudokuCell, int]
+                                    ] = col.get_unique_candidate_in_sequence()
+            for cell, candidate in unique_candidates:
+                cell.remove_all_candidates_except(candidate)
+                self.prune_candidates_from_row_column_box(cell)
+
+        # Check boxes for hidden singles
+        for box in self.boxes[1:]:
+            unique_candidates: List[Tuple[SudokuCell, int]
+                                    ] = box.get_unique_candidate_in_sequence()
+            for cell, candidate in unique_candidates:
+                cell.remove_all_candidates_except(candidate)
+                self.prune_candidates_from_row_column_box(cell)
