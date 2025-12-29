@@ -100,6 +100,10 @@ class SudokuSequence(object):
     def __getitem__(self, index: int) -> SudokuCell:
         return self._cells[index]
 
+    def __iter__(self):
+        # delegate iteration to the internal list
+        return iter(self._cells)
+
     def get_unique_candidate_in_sequence(self) -> List[Tuple[SudokuCell, int]]:
         """
         Finds candidates that appear only once in the sequence.
@@ -191,6 +195,10 @@ class SudokuBox(object):
             return self._cells[i, j]
         else:
             raise TypeError("Invalid index. Use obj[i, j] syntax.")
+
+    def __iter__(self):
+        # delegate iteration to the internal 2D array flattened
+        return iter(self._cells.flatten())
 
     def __str__(self):
         text_str = ""
@@ -480,11 +488,12 @@ class SudokuProblem(object):
 
         # Prune candidates in the same box
         box_id = self.to_box_id(row_id, col_id)
-        for i in range(constant.BOX_WIDTH):
-            for j in range(constant.BOX_WIDTH):
-                peer_cell = self.boxes[box_id][i, j]
-                if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
-                    peer_cell.remove_candidate(solved_value)
+        for peer_cell in self.boxes[box_id]:
+            # for i in range(constant.BOX_WIDTH):
+            #     for j in range(constant.BOX_WIDTH):
+            #         peer_cell = self.boxes[box_id][i, j]
+            if is_not_solved_and_contains_prunable_value(peer_cell, solved_value):
+                peer_cell.remove_candidate(solved_value)
 
     def count_all_candidates(self) -> int:
         """
@@ -532,3 +541,91 @@ class SudokuProblem(object):
             for cell, candidate in unique_candidates:
                 cell.remove_all_candidates_except(candidate)
                 self.prune_candidates_from_row_column_box(cell)
+
+    def apply_naked_pair_strategy(self) -> None:
+        """
+        Applies the naked pair strategy to the Sudoku grid.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for naked pairs
+        for row in self.rows[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                cell for cell in row if cell.number_of_candidates == 2]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for peer_cell in row:
+                        if peer_cell not in cells and not peer_cell.is_solved():
+                            for candidate in candidates:
+                                peer_cell.remove_candidate(candidate)
+
+        # Check columns for naked pairs
+        for col in self.cols[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                cell for cell in col if cell.number_of_candidates == 2]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for peer_cell in col:
+                        if peer_cell not in cells and not peer_cell.is_solved():
+                            for candidate in candidates:
+                                peer_cell.remove_candidate(candidate)
+
+        # Check boxes for naked pairs
+        for box in self.boxes[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                box[i, j]
+                for i in range(constant.BOX_WIDTH)
+                for j in range(constant.BOX_WIDTH)
+                if box[i, j].number_of_candidates == 2
+            ]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for i in range(constant.BOX_WIDTH):
+                        for j in range(constant.BOX_WIDTH):
+                            peer_cell = box[i, j]
+                            if peer_cell not in cells and not peer_cell.is_solved():
+                                for candidate in candidates:
+                                    peer_cell.remove_candidate(candidate)
+
+    def is_solved(self) -> bool:
+        """
+        Checks if the Sudoku puzzle is completely solved.
+
+        Returns
+        -------
+        bool
+            True if the Sudoku puzzle is completely solved, False otherwise.
+        """
+        return self.count_solved_cells() == constant.NUMBER_OF_CELLS
