@@ -81,6 +81,11 @@ class SudokuCell(object):
             self._candidates = [value]
             self._value = value
 
+    def set_candidates(self, candidates: List[int]) -> None:
+        self._candidates = candidates
+        if self.number_of_candidates == 1:
+            self._value = self._candidates[0]
+
     def __str__(self):
         return f"(value: {self._value}, row_id: {self._row_id}, col_id: {self._col_id})"
 
@@ -541,6 +546,103 @@ class SudokuProblem(object):
             for cell, candidate in unique_candidates:
                 cell.remove_all_candidates_except(candidate)
                 self.prune_candidates_from_row_column_box(cell)
+
+    def apply_hidden_pair_strategy(self) -> None:
+        """
+        Applies the hidden pair strategy to the Sudoku grid.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for hidden pairs
+        for row in self.rows[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in row:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden pairs
+            hidden_pairs = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 2
+            ]
+
+            # Eliminate other candidates from the cells in the hidden pair
+            for candidate, cells in hidden_pairs:
+                # Find the counterpart candidate in the hidden pair
+                for other_candidate, other_cells in hidden_pairs:
+                    if other_candidate != candidate and cells == other_cells:
+                        for cell in cells:
+                            cell.set_candidates([candidate, other_candidate])
+
+        # Check columns for hidden pairs
+        for col in self.cols[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in col:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden pairs
+            hidden_pairs = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 2
+            ]
+
+            # Eliminate other candidates from the cells in the hidden pair
+            for candidate, cells in hidden_pairs:
+                # Find the counterpart candidate in the hidden pair
+                for other_candidate, other_cells in hidden_pairs:
+                    if other_candidate != candidate and cells == other_cells:
+                        for cell in cells:
+                            cell.set_candidates([candidate, other_candidate])
+
+        # Check boxes for hidden pairs
+        for box in self.boxes[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for i in range(constant.BOX_WIDTH):
+                for j in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_count:
+                            candidate_count[candidate] += 1
+                            candidate_cell_map[candidate].append(cell)
+                        else:
+                            candidate_count[candidate] = 1
+                            candidate_cell_map[candidate] = [cell]
+
+            # Find hidden pairs
+            hidden_pairs = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 2
+            ]
+
+            # Eliminate other candidates from the cells in the hidden pair
+            for candidate, cells in hidden_pairs:
+                # Find the counterpart candidate in the hidden pair
+                for other_candidate, other_cells in hidden_pairs:
+                    if other_candidate != candidate and cells == other_cells:
+                        for cell in cells:
+                            cell.set_candidates([candidate, other_candidate])
 
     def apply_naked_group_strategy(self, group_size: int = 2) -> None:
         """
