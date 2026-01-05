@@ -542,76 +542,82 @@ class SudokuProblem(object):
                 cell.remove_all_candidates_except(candidate)
                 self.prune_candidates_from_row_column_box(cell)
 
-    def apply_naked_pair_strategy(self) -> None:
+    def apply_naked_group_strategy(self, group_size: int = 2) -> None:
         """
-        Applies the naked pair strategy to the Sudoku grid.
+        Applies the naked group strategy to the Sudoku grid.
+
+        Parameters
+        ----------
+        group_size : int, default=2
+            The size of the group to look for.
 
         Returns
         -------
         None
         """
-        # Check rows for naked pairs
+        # Check rows for naked groups
         for row in self.rows[1:]:
-            # Find all cells with exactly two candidates
-            two_candidate_cells = [
-                cell for cell in row if cell.number_of_candidates == 2]
-            # Find naked pairs
-            seen_pairs = dict()
-            for cell in two_candidate_cells:
+            # Find all cells with exactly group_size candidates
+            group_size_candidate_cells = [
+                cell for cell in row if cell.number_of_candidates == group_size]
+            # Find naked groups
+            seen_groups = dict()
+            for cell in group_size_candidate_cells:
                 candidates_tuple = tuple(sorted(cell.candidates))
-                if candidates_tuple in seen_pairs:
-                    seen_pairs[candidates_tuple].append(cell)
+                if candidates_tuple in seen_groups:
+                    seen_groups[candidates_tuple].append(cell)
                 else:
-                    seen_pairs[candidates_tuple] = [cell]
+                    seen_groups[candidates_tuple] = [cell]
             # Eliminate candidates from other cells
-            for candidates, cells in seen_pairs.items():
-                if len(cells) == 2:  # Found a naked pair
+            for candidates, cells in seen_groups.items():
+                if len(cells) == group_size:  # Found a naked group
                     for peer_cell in row:
                         if peer_cell not in cells and not peer_cell.is_solved():
                             for candidate in candidates:
                                 peer_cell.remove_candidate(candidate)
 
-        # Check columns for naked pairs
+        # Check columns for naked groups
         for col in self.cols[1:]:
-            # Find all cells with exactly two candidates
-            two_candidate_cells = [
-                cell for cell in col if cell.number_of_candidates == 2]
-            # Find naked pairs
-            seen_pairs = dict()
-            for cell in two_candidate_cells:
+            # Find all cells with exactly group_size candidates
+            group_size_candidate_cells = [
+                cell for cell in col if cell.number_of_candidates == group_size]
+            # Find naked groups
+            seen_groups = dict()
+            for cell in group_size_candidate_cells:
                 candidates_tuple = tuple(sorted(cell.candidates))
-                if candidates_tuple in seen_pairs:
-                    seen_pairs[candidates_tuple].append(cell)
+                if candidates_tuple in seen_groups:
+                    seen_groups[candidates_tuple].append(cell)
                 else:
-                    seen_pairs[candidates_tuple] = [cell]
+                    seen_groups[candidates_tuple] = [cell]
             # Eliminate candidates from other cells
-            for candidates, cells in seen_pairs.items():
-                if len(cells) == 2:  # Found a naked pair
+            for candidates, cells in seen_groups.items():
+                if len(cells) == group_size:  # Found a naked group
                     for peer_cell in col:
                         if peer_cell not in cells and not peer_cell.is_solved():
                             for candidate in candidates:
                                 peer_cell.remove_candidate(candidate)
 
-        # Check boxes for naked pairs
+        # Check boxes for naked groups
         for box in self.boxes[1:]:
-            # Find all cells with exactly two candidates
-            two_candidate_cells = [
+            # Find all cells with exactly group_size candidates
+            group_size_candidate_cells = [
                 box[i, j]
                 for i in range(constant.BOX_WIDTH)
                 for j in range(constant.BOX_WIDTH)
-                if box[i, j].number_of_candidates == 2
+                if box[i, j].number_of_candidates == group_size
             ]
-            # Find naked pairs
-            seen_pairs = dict()
-            for cell in two_candidate_cells:
+            # Find naked groups
+            seen_groups = dict()
+            for cell in group_size_candidate_cells:
                 candidates_tuple = tuple(sorted(cell.candidates))
-                if candidates_tuple in seen_pairs:
-                    seen_pairs[candidates_tuple].append(cell)
+                if candidates_tuple in seen_groups:
+                    seen_groups[candidates_tuple].append(cell)
                 else:
-                    seen_pairs[candidates_tuple] = [cell]
+                    seen_groups[candidates_tuple] = [cell]
+
             # Eliminate candidates from other cells
-            for candidates, cells in seen_pairs.items():
-                if len(cells) == 2:  # Found a naked pair
+            for candidates, cells in seen_groups.items():
+                if len(cells) == group_size:  # Found a naked group
                     for i in range(constant.BOX_WIDTH):
                         for j in range(constant.BOX_WIDTH):
                             peer_cell = box[i, j]
