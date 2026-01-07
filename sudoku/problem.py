@@ -644,6 +644,143 @@ class SudokuProblem(object):
                         for cell in cells:
                             cell.set_candidates([candidate, other_candidate])
 
+    def apply_hidden_group_strategy(self, group_size: int = 2) -> None:
+        """
+        Applies the hidden group strategy to the Sudoku grid.
+
+        Parameters
+        ----------
+        group_size : int, default=2
+            The size of the group to look for.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for hidden groups
+        for row in self.rows[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in row:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden groups
+            hidden_groups = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == group_size
+            ]
+
+            # Among hidden groups, find sets of candidates that share the same cells
+            seen_groups = dict()
+            for candidate, cells in hidden_groups:
+                cells_tuple = tuple(
+                    sorted(cells, key=lambda c: (c.row_id, c.col_id)))
+                if cells_tuple in seen_groups:
+                    seen_groups[cells_tuple].append(candidate)
+                else:
+                    seen_groups[cells_tuple] = [candidate]
+
+            # for k, v in seen_groups.items():
+            #     print(
+            #         f'k: {[[cell.row_id, cell.col_id, cell.candidates] for cell in k]}, v: {v}')
+
+            # Eliminate other candidates from the cells in the hidden group
+            for cells, candidates in seen_groups.items():
+                if len(candidates) == group_size:  # Found a hidden group
+                    # print(
+                    #     f"Hidden group found in row: {[cell.candidates for cell in cells]}, candidates: {candidates}")
+
+                    for cell in cells:
+                        if cell.number_of_candidates > group_size:
+                            print("Done")
+                            cell.set_candidates(candidates)
+
+        # Check columns for hidden groups
+        for col in self.cols[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in col:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden groups
+            hidden_groups = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == group_size
+            ]
+
+            # Among hidden groups, find sets of candidates that share the same cells
+            seen_groups = dict()
+            for candidate, cells in hidden_groups:
+                cells_tuple = tuple(
+                    sorted(cells, key=lambda c: (c.row_id, c.col_id)))
+                if cells_tuple in seen_groups:
+                    seen_groups[cells_tuple].append(candidate)
+                else:
+                    seen_groups[cells_tuple] = [candidate]
+
+            # Eliminate other candidates from the cells in the hidden group
+            for cells, candidates in seen_groups.items():
+                if len(candidates) == group_size:  # Found a hidden group
+                    for cell in cells:
+                        if cell.number_of_candidates > group_size:
+                            cell.set_candidates(candidates)
+
+        # Check boxes for hidden groups
+        for box in self.boxes[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for i in range(constant.BOX_WIDTH):
+                for j in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_count:
+                            candidate_count[candidate] += 1
+                            candidate_cell_map[candidate].append(cell)
+                        else:
+                            candidate_count[candidate] = 1
+                            candidate_cell_map[candidate] = [cell]
+
+            # Find hidden groups
+            hidden_groups = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == group_size
+            ]
+
+            # Among hidden groups, find sets of candidates that share the same cells
+            seen_groups = dict()
+            for candidate, cells in hidden_groups:
+                cells_tuple = tuple(
+                    sorted(cells, key=lambda c: (c.row_id, c.col_id)))
+                if cells_tuple in seen_groups:
+                    seen_groups[cells_tuple].append(candidate)
+                else:
+                    seen_groups[cells_tuple] = [candidate]
+
+            # Eliminate other candidates from the cells in the hidden group
+            for cells, candidates in seen_groups.items():
+                if len(candidates) == group_size:  # Found a hidden group
+                    for cell in cells:
+                        if cell.number_of_candidates > group_size:
+                            cell.set_candidates(candidates)
+
     def apply_naked_group_strategy(self, group_size: int = 2) -> None:
         """
         Applies the naked group strategy to the Sudoku grid.
