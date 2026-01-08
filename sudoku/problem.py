@@ -644,6 +644,115 @@ class SudokuProblem(object):
                         for cell in cells:
                             cell.set_candidates([candidate, other_candidate])
 
+    def apply_hidden_triplet_strategy(self) -> None:
+        """
+        Applies the hidden triplet strategy to the Sudoku grid.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for hidden triplets
+        for row in self.rows[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in row:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden triplets
+            hidden_triplets = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 3
+            ]
+
+            # Eliminate other candidates from the cells in the hidden triplet
+            for candidate, cells in hidden_triplets:
+                # Find the counterpart candidates in the hidden triplet
+                for other_candidate, other_cells in hidden_triplets:
+                    for another_candidate, another_cells in hidden_triplets:
+                        if (other_candidate != candidate and another_candidate != candidate and
+                                other_candidate != another_candidate and
+                                cells == other_cells == another_cells):
+                            for cell in cells:
+                                cell.set_candidates(
+                                    [candidate, other_candidate, another_candidate])
+
+        # Check columns for hidden triplets
+        for col in self.cols[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for cell in col:
+                for candidate in cell.candidates:
+                    if candidate in candidate_count:
+                        candidate_count[candidate] += 1
+                        candidate_cell_map[candidate].append(cell)
+                    else:
+                        candidate_count[candidate] = 1
+                        candidate_cell_map[candidate] = [cell]
+
+            # Find hidden triplets
+            hidden_triplets = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 3
+            ]
+
+            # Eliminate other candidates from the cells in the hidden triplet
+            for candidate, cells in hidden_triplets:
+                # Find the counterpart candidates in the hidden triplet
+                for other_candidate, other_cells in hidden_triplets:
+                    for another_candidate, another_cells in hidden_triplets:
+                        if (other_candidate != candidate and another_candidate != candidate and
+                                other_candidate != another_candidate and
+                                cells == other_cells == another_cells):
+                            for cell in cells:
+                                cell.set_candidates(
+                                    [candidate, other_candidate, another_candidate])
+
+        # Check boxes for hidden triplets
+        for box in self.boxes[1:]:
+            candidate_count = dict()
+            candidate_cell_map = dict()
+
+            for i in range(constant.BOX_WIDTH):
+                for j in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_count:
+                            candidate_count[candidate] += 1
+                            candidate_cell_map[candidate].append(cell)
+                        else:
+                            candidate_count[candidate] = 1
+                            candidate_cell_map[candidate] = [cell]
+
+            # Find hidden triplets
+            hidden_triplets = [
+                (candidate, cells)
+                for candidate, cells in candidate_cell_map.items()
+                if candidate_count[candidate] == 3
+            ]
+
+            # Eliminate other candidates from the cells in the hidden triplet
+            for candidate, cells in hidden_triplets:
+                # Find the counterpart candidates in the hidden triplet
+                for other_candidate, other_cells in hidden_triplets:
+                    for another_candidate, another_cells in hidden_triplets:
+                        if (other_candidate != candidate and another_candidate != candidate and
+                                other_candidate != another_candidate and
+                                cells == other_cells == another_cells):
+                            for cell in cells:
+                                cell.set_candidates(
+                                    [candidate, other_candidate, another_candidate])
+
     def apply_hidden_group_strategy(self, group_size: int = 2) -> None:
         """
         Applies the hidden group strategy to the Sudoku grid.
@@ -688,10 +797,6 @@ class SudokuProblem(object):
                 else:
                     seen_groups[cells_tuple] = [candidate]
 
-            # for k, v in seen_groups.items():
-            #     print(
-            #         f'k: {[[cell.row_id, cell.col_id, cell.candidates] for cell in k]}, v: {v}')
-
             # Eliminate other candidates from the cells in the hidden group
             for cells, candidates in seen_groups.items():
                 if len(candidates) == group_size:  # Found a hidden group
@@ -699,9 +804,11 @@ class SudokuProblem(object):
                     #     f"Hidden group found in row: {[cell.candidates for cell in cells]}, candidates: {candidates}")
 
                     for cell in cells:
-                        if cell.number_of_candidates > group_size:
-                            print("Done")
-                            cell.set_candidates(candidates)
+                        cell.set_candidates(candidates)
+
+                        # if cell.number_of_candidates > group_size:
+                        #     # print("Done")
+                        #     cell.set_candidates(candidates)
 
         # Check columns for hidden groups
         for col in self.cols[1:]:
@@ -738,8 +845,11 @@ class SudokuProblem(object):
             for cells, candidates in seen_groups.items():
                 if len(candidates) == group_size:  # Found a hidden group
                     for cell in cells:
-                        if cell.number_of_candidates > group_size:
-                            cell.set_candidates(candidates)
+                        cell.set_candidates(candidates)
+
+                        # if cell.number_of_candidates > group_size:
+                        #     # print("Done")
+                        #     cell.set_candidates(candidates)
 
         # Check boxes for hidden groups
         for box in self.boxes[1:]:
@@ -778,8 +888,88 @@ class SudokuProblem(object):
             for cells, candidates in seen_groups.items():
                 if len(candidates) == group_size:  # Found a hidden group
                     for cell in cells:
-                        if cell.number_of_candidates > group_size:
-                            cell.set_candidates(candidates)
+                        cell.set_candidates(candidates)
+
+                        # if cell.number_of_candidates > group_size:
+                        #     # print("Done")
+                        #     cell.set_candidates(candidates)
+
+    def apply_naked_pair_strategy(self) -> None:
+        """
+        Applies the naked pair strategy to the Sudoku grid.
+
+        Returns
+        -------
+        None
+        """
+        # Check rows for naked pairs
+        for row in self.rows[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                cell for cell in row if cell.number_of_candidates == 2]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for peer_cell in row:
+                        if peer_cell not in cells and not peer_cell.is_solved():
+                            for candidate in candidates:
+                                peer_cell.remove_candidate(candidate)
+
+        # Check columns for naked pairs
+        for col in self.cols[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                cell for cell in col if cell.number_of_candidates == 2]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for peer_cell in col:
+                        if peer_cell not in cells and not peer_cell.is_solved():
+                            for candidate in candidates:
+                                peer_cell.remove_candidate(candidate)
+
+        # Check boxes for naked pairs
+        for box in self.boxes[1:]:
+            # Find all cells with exactly two candidates
+            two_candidate_cells = [
+                box[i, j]
+                for i in range(constant.BOX_WIDTH)
+                for j in range(constant.BOX_WIDTH)
+                if box[i, j].number_of_candidates == 2
+            ]
+            # Find naked pairs
+            seen_pairs = dict()
+            for cell in two_candidate_cells:
+                candidates_tuple = tuple(sorted(cell.candidates))
+                if candidates_tuple in seen_pairs:
+                    seen_pairs[candidates_tuple].append(cell)
+                else:
+                    seen_pairs[candidates_tuple] = [cell]
+            # Eliminate candidates from other cells
+            for candidates, cells in seen_pairs.items():
+                if len(cells) == 2:  # Found a naked pair
+                    for i in range(constant.BOX_WIDTH):
+                        for j in range(constant.BOX_WIDTH):
+                            peer_cell = box[i, j]
+                            if peer_cell not in cells and not peer_cell.is_solved():
+                                for candidate in candidates:
+                                    peer_cell.remove_candidate(candidate)
 
     def apply_naked_group_strategy(self, group_size: int = 2) -> None:
         """
