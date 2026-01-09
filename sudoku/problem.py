@@ -1,6 +1,6 @@
 from typing import List, Tuple, Any
 import numpy as np
-from sudoku.utils import constant
+from sudoku import constant
 
 
 def has_row_divider(row_id: int) -> bool:
@@ -1053,6 +1053,192 @@ class SudokuProblem(object):
                             if peer_cell not in cells and not peer_cell.is_solved():
                                 for candidate in candidates:
                                     peer_cell.remove_candidate(candidate)
+
+    def apply_box_line_strategy(self) -> None:
+        """
+        Applies the box-line reduction strategy to the Sudoku grid.
+        Ideas:
+            - For each box:
+                - For each row/column that intersects the box:
+                    - Check if a candidate number appears only in 3 cells intersecting row/column within the box, but not 6 cells outside the box.
+                    - If so, eliminate that candidate from other cells inside the box but not in the intersecting row/column.
+        Returns
+        -------
+        None
+        """
+        for box_index in range(1, constant.NUMB_BOXES + 1):
+            box = self.boxes[box_index]
+            start_row_id = ((box_index - 1) //
+                            constant.BOX_WIDTH) * constant.BOX_WIDTH
+            start_col_id = ((box_index - 1) %
+                            constant.BOX_WIDTH) * constant.BOX_WIDTH
+
+            # Check rows intersecting the box
+            for i in range(constant.BOX_WIDTH):
+                row_id = start_row_id + i
+                row = self.rows[row_id]
+                candidate_cells_in_box = dict()
+
+                for j in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_cells_in_box:
+                            candidate_cells_in_box[candidate].append(cell)
+                        else:
+                            candidate_cells_in_box[candidate] = [cell]
+
+                for candidate, cells in candidate_cells_in_box.items():
+                    if len(cells) > 0:
+                        # Check if candidate appears outside the box in the same row
+                        appears_outside_box = False
+                        for col_id in range(constant.NUMB_COLUMNS):
+                            if not (start_col_id <= col_id < start_col_id + constant.BOX_WIDTH):
+                                peer_cell = self.grid[row_id, col_id]
+                                if candidate in peer_cell.candidates:
+                                    appears_outside_box = True
+                                    break
+
+                        if not appears_outside_box:
+                            # Eliminate candidate from other cells in the box not in this row
+                            for m in range(constant.BOX_WIDTH):
+                                for n in range(constant.BOX_WIDTH):
+                                    peer_cell = box[m, n]
+                                    if m != row_id and not peer_cell.is_solved():
+                                        peer_cell.remove_candidate(candidate)
+
+            # Check columns intersecting the box
+            for j in range(constant.BOX_WIDTH):
+                col_id = start_col_id + j
+                col = self.cols[col_id]
+                candidate_cells_in_box = dict()
+
+                for i in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_cells_in_box:
+                            candidate_cells_in_box[candidate].append(cell)
+                        else:
+                            candidate_cells_in_box[candidate] = [cell]
+
+                for candidate, cells in candidate_cells_in_box.items():
+                    if len(cells) > 0:
+                        # Check if candidate appears outside the box in the same column
+                        appears_outside_box = False
+                        for row_id in range(constant.NUMB_ROWS):
+                            if not (start_row_id <= row_id < start_row_id + constant.BOX_WIDTH):
+                                peer_cell = self.grid[row_id, col_id]
+                                if candidate in peer_cell.candidates:
+                                    appears_outside_box = True
+                                    break
+
+                        if not appears_outside_box:
+                            # Eliminate candidate from other cells in the box not in this column
+                            for m in range(constant.BOX_WIDTH):
+                                for n in range(constant.BOX_WIDTH):
+                                    peer_cell = box[m, n]
+                                    if n != col_id and not peer_cell.is_solved():
+                                        peer_cell.remove_candidate(candidate)
+
+    def apply_pointing_line_strategy(self) -> None:
+        """
+        Applies the pointing line strategy to the Sudoku grid.
+        Ideas:
+            - For each box:
+                - For each candidate number:
+                    - Check if the candidate appears only in one row/column within the box.
+                    - If so, eliminate that candidate from other cells in the same row/column outside the box.
+        Returns
+        -------
+        None
+        """
+        for box_index in range(1, constant.NUMB_BOXES + 1):
+            box = self.boxes[box_index]
+            start_row_id = ((box_index - 1) //
+                            constant.BOX_WIDTH) * constant.BOX_WIDTH
+            start_col_id = ((box_index - 1) %
+                            constant.BOX_WIDTH) * constant.BOX_WIDTH
+
+            candidate_cells_in_box = dict()
+
+            for i in range(constant.BOX_WIDTH):
+                for j in range(constant.BOX_WIDTH):
+                    cell = box[i, j]
+                    for candidate in cell.candidates:
+                        if candidate in candidate_cells_in_box:
+                            candidate_cells_in_box[candidate].append(
+                                (cell, start_row_id + i, start_col_id + j))
+                        else:
+                            candidate_cells_in_box[candidate] = [
+                                (cell, start_row_id + i, start_col_id + j)]
+
+            for candidate, cell_positions in candidate_cells_in_box.items():
+                if len(cell_positions) > 0:
+                    # Check if all cells are in the same row
+                    first_row_id = cell_positions[0][1]
+                    if all(pos[1] == first_row_id for pos in cell_positions):
+                        # Eliminate candidate from other cells in the same row outside the box
+                        for col_id in range(constant.NUMB_COLUMNS):
+                            if not (start_col_id <= col_id < start_col_id + constant.BOX_WIDTH):
+                                peer_cell = self.grid[first_row_id, col_id]
+                                if candidate in peer_cell.candidates:
+                                    peer_cell.remove_candidate(candidate)
+
+                    # Check if all cells are in the same column
+                    first_col_id = cell_positions[0][2]
+                    if all(pos[2] == first_col_id for pos in cell_positions):
+                        # Eliminate candidate from other cells in the same column outside the box
+                        for row_id in range(constant.NUMB_ROWS):
+                            if not (start_row_id <= row_id < start_row_id + constant.BOX_WIDTH):
+                                peer_cell = self.grid[row_id, first_col_id]
+                                if candidate in peer_cell.candidates:
+                                    peer_cell.remove_candidate(candidate)
+
+    def apply_x_wing_strategy(self) -> None:  # lines-2
+        """
+        Applies the X-Wing strategy to the Sudoku grid.
+        Ideas:
+            - For each candidate number:
+                - Identify rows where the candidate appears exactly twice.
+                - Check if these rows form a rectangle with two columns.
+                - If so, eliminate that candidate from other cells in those rows excepts for rectangle's corner.
+        Returns
+        -------
+        None
+        """
+        for candidate in constant.DEFAULT_POSSIBLE_CELL_VALUE:
+            rows_with_candidate_positions = dict()
+
+            # Identify rows where the candidate appears exactly twice
+            for row_id in range(1, constant.NUMB_ROWS + 1):
+                row = self.rows[row_id]
+                candidate_positions = [
+                    col_id for col_id in range(1, constant.NUMB_COLUMNS + 1)
+                    if candidate in row[col_id].candidates
+                ]
+                if len(candidate_positions) == 2:
+                    rows_with_candidate_positions[row_id] = candidate_positions
+
+            # Check for X-Wing patterns
+            row_ids = list(rows_with_candidate_positions.keys())
+            for i in range(len(row_ids)):
+                for j in range(i + 1, len(row_ids)):
+                    row1_id = row_ids[i]
+                    row2_id = row_ids[j]
+                    cols_row1 = rows_with_candidate_positions[row1_id]
+                    cols_row2 = rows_with_candidate_positions[row2_id]
+
+                    if cols_row1 == cols_row2:
+                        col1_id, col2_id = cols_row1
+
+                        # Eliminate candidate from other cells in these rows except for rectangle's corners
+                        for col_id in range(1, constant.NUMB_COLUMNS + 1):
+                            if col_id != col1_id and col_id != col2_id:
+                                cell1 = self.grid[row1_id, col_id]
+                                cell2 = self.grid[row2_id, col_id]
+                                if candidate in cell1.candidates:
+                                    cell1.remove_candidate(candidate)
+                                if candidate in cell2.candidates:
+                                    cell2.remove_candidate(candidate)
 
     def is_solved(self) -> bool:
         """
