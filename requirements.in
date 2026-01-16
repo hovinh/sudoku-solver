@@ -1,2 +1,15 @@
-numpy
+# Logging
+logzero
+
+# Jupyter kernel
 ipykernel
+
+# Numerical computations
+numpy
+
+# Development and testing
+pytest
+black
+isort
+flake8
+invoke
