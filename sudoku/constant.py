@@ -1,7 +1,7 @@
 import numpy as np
 
 DEFAULT_POSSIBLE_CELL_VALUE = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-NO_SOLUTION_VALUE = 0  # UNFILLED_VALUE
+NO_SOLUTION_VALUE = 0  # Represents no solution in a cell
 BOX_WIDTH = 3
 ROW_DIVIDER = "- - - - - - - - - - -\n"
 
@@ -58,7 +58,7 @@ CELL_IS_NOT_FILLED_TEMPLATE = np.array(
         [" ", " ", " "],
     ]
 )
-FILLED_INDEX = (1, 1)
+FILLED_INDEX = (1, 1)  # The index in the 3x3 cell template where the filled number goes
 NUMBER_OF_ROWS = 9
 NUMBER_OF_COLUMNS = 9
 NUMBER_OF_BOXES = 9

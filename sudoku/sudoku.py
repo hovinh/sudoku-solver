@@ -189,6 +189,30 @@ class SudokuPuzzle(object):
         for cell in flattened_grid:
             yield cell
 
+    def iterate_over_rows(self):
+        """Public method to iterate over rows."""
+        for row in self.rows[1:]:
+            yield row
+
+    def iterate_over_columns(self):
+        """Public method to iterate over columns."""
+        for column in self.columns[1:]:
+            yield column
+
+    def iterate_over_boxes(self):
+        """Public method to iterate over boxes."""
+        for box in self.boxes[1:]:
+            yield box
+
+    def iterate_over_all_units(self):
+        """Public method to iterate over all units (rows, columns, boxes)."""
+        for row in self.iterate_over_rows():
+            yield row
+        for column in self.iterate_over_columns():
+            yield column
+        for box in self.iterate_over_boxes():
+            yield box
+
     def count_solved_cells(self) -> int:
         """
         Counts the number of solved cells in the Sudoku grid.
@@ -212,6 +236,17 @@ class SudokuPuzzle(object):
         """
         flattened_grid = self.grid.flatten()
         return sum(cell.number_of_candidates for cell in self.iterate_over_cells())
+
+    def is_solved(self) -> bool:
+        """
+        Checks if the Sudoku puzzle is completely solved.
+
+        Returns
+        -------
+        bool
+            True if all cells in the Sudoku grid are solved, False otherwise.
+        """
+        return self.count_solved_cells() == constant.NUMBER_OF_CELLS
 
     def to_box_id(self, row_id: int, col_id: int) -> int:
         """

@@ -21,14 +21,14 @@ class SudokuCellGroup(object):
     def __iter__(self):
         return iter(self._cells)
 
-    def get_unique_candidate_in_sequence(self) -> List[Tuple[SudokuCell, int]]:
+    def get_unique_candidates_and_belonging_cells(self) -> List[Tuple[int, SudokuCell]]:
         """
-        Finds candidates that appear only once in the group.
+        Finds candidates that appear only once in the group and their corresponding cells.
 
         Returns
         -------
-        List[Tuple[SudokuCell, int]]
-            A list of tuples containing the SudokuCell and its unique candidate value.
+        List[Tuple[int, SudokuCell]]
+            A list of tuples containing the unique candidate value and its corresponding SudokuCell.
         """
         candidate_count = dict()
         candidate_cell_map = dict()
@@ -42,7 +42,7 @@ class SudokuCellGroup(object):
                     candidate_cell_map[candidate] = cell
 
         unique_candidates = [
-            (candidate_cell_map[candidate], candidate)
+            (candidate, candidate_cell_map[candidate])
             for candidate, count in candidate_count.items()
             if count == 1  # occur only once
         ]
