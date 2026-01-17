@@ -1,9 +1,11 @@
+from typing import Any, List, Tuple
 
-from typing import Any, Tuple, List
 from sudoku.unit.cell import SudokuCell
 
 
 class SudokuCellGroup(object):
+    """An interface for a group of SudokuCell objects."""
+
     def __init__(self, cells: List[Any]) -> None:
         """
         Initializes SudokuCellGroup instance.
@@ -51,6 +53,8 @@ class SudokuCellGroup(object):
 
 
 class SudokuRow(SudokuCellGroup):
+    """A class representing a row of cells in a Sudoku puzzle."""
+
     def __init__(self, cells: List[SudokuCell]) -> None:
         """
         Initializes SudokuRow instance.
@@ -64,6 +68,8 @@ class SudokuRow(SudokuCellGroup):
 
 
 class SudokuColumn(SudokuCellGroup):
+    """A class representing a column of cells in a Sudoku puzzle."""
+
     def __init__(self, cells: List[SudokuCell]) -> None:
         """
         Initializes SudokuColumn instance.
@@ -77,6 +83,8 @@ class SudokuColumn(SudokuCellGroup):
 
 
 class SudokuBox(SudokuCellGroup):
+    """A class representing a box of cells in a Sudoku puzzle."""
+
     def __init__(self, cells: List[SudokuCell]) -> None:
         """
         Initializes SudokuBox instance.

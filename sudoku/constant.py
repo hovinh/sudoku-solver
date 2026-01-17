@@ -5,8 +5,8 @@ NO_SOLUTION_VALUE = 0  # Represents no solution in a cell
 BOX_WIDTH = 3
 ROW_DIVIDER = "- - - - - - - - - - -\n"
 
-DISPLAY_TEMPLATE = np.array(
-    list(
+DISPLAY_TEMPLATE = np.array(  # noqa: W291
+    list(  # noqa: W291
         """
        1   2   3    4   5   6    7   8   9   
     ++===+===+===++===+===+===++===+===+===++

@@ -1,11 +1,15 @@
-from typing import List, Tuple
+from typing import Tuple
+
 import numpy as np
-from sudoku.unit.cell_group import SudokuRow, SudokuColumn, SudokuBox
-from sudoku.unit.cell import SudokuCell
+
 from sudoku import constant
+from sudoku.unit.cell import SudokuCell
+from sudoku.unit.cell_group import SudokuBox, SudokuColumn, SudokuRow
 
 
 class SudokuPuzzle(object):
+    """A class representing a Sudoku puzzle."""
+
     def __init__(self, sudoku_string: str) -> None:
         """
         Initializes Sudoku instance.
@@ -44,7 +48,8 @@ class SudokuPuzzle(object):
 
     def __setup_grid(self, sudoku_string: str):
         """
-        Creates a 2D array of SudokuCell objects from a flat string representation of the Sudoku grid.
+        Creates a 2D array of SudokuCell objects from a flat string representation
+        of the Sudoku grid.
 
         Parameters
         ----------
@@ -66,9 +71,9 @@ class SudokuPuzzle(object):
         grid.append([None] * (ENDING_COLUMN_INDEX + 1))
 
         # Create cells row by row
-        for row_id in range(STARTING_INDEX, ENDING_ROW_INDEX+1, 1):
+        for row_id in range(STARTING_INDEX, ENDING_ROW_INDEX + 1, 1):
             row = [None]  # Offset index by 1
-            for col_id in range(STARTING_INDEX, ENDING_COLUMN_INDEX+1, 1):
+            for col_id in range(STARTING_INDEX, ENDING_COLUMN_INDEX + 1, 1):
                 cell_value = int(sudoku_string[str_id])
                 cell = SudokuCell(row_id, col_id, cell_value)
                 row.append(cell)
@@ -90,9 +95,11 @@ class SudokuPuzzle(object):
         STARTING_COLUMN_INDEX = 1
         ENDING_ROW_INDEX = constant.NUMBER_OF_ROWS
         rows = np.array(
-            OFFSET_ROW +
-            [SudokuRow(self.grid[row_id, STARTING_COLUMN_INDEX:])
-             for row_id in range(STARTING_ROW_INDEX, ENDING_ROW_INDEX+1, 1)]
+            OFFSET_ROW
+            + [
+                SudokuRow(self.grid[row_id, STARTING_COLUMN_INDEX:])
+                for row_id in range(STARTING_ROW_INDEX, ENDING_ROW_INDEX + 1, 1)
+            ]
         )
         return rows
 
@@ -110,10 +117,11 @@ class SudokuPuzzle(object):
         STARTING_COL_INDEX = 1
         ENDING_COL_INDEX = constant.NUMBER_OF_COLUMNS
         cols = np.array(
-            OFFSET_COL +
-            [SudokuColumn(self.grid[STARTING_ROW_INDEX:, col_id])
-                for col_id in range(STARTING_COL_INDEX, ENDING_COL_INDEX+1, 1)
-             ]
+            OFFSET_COL
+            + [
+                SudokuColumn(self.grid[STARTING_ROW_INDEX:, col_id])
+                for col_id in range(STARTING_COL_INDEX, ENDING_COL_INDEX + 1, 1)
+            ]
         )
         return cols
 
@@ -131,7 +139,7 @@ class SudokuPuzzle(object):
         BOX_WIDTH = constant.BOX_WIDTH
         STARTING_BOX_INDEX = 1
         ENDING_BOX_INDEX = constant.NUMBER_OF_BOXES
-        for box_id in range(STARTING_BOX_INDEX, ENDING_BOX_INDEX+1, 1):
+        for box_id in range(STARTING_BOX_INDEX, ENDING_BOX_INDEX + 1, 1):
             # Map box id to row and column indices
             start_row_id = ((box_id - 1) // BOX_WIDTH) * BOX_WIDTH + 1
             end_row_id = start_row_id + BOX_WIDTH
@@ -140,8 +148,7 @@ class SudokuPuzzle(object):
 
             # Extract cells in the box
             box = SudokuBox(
-                self.grid[start_row_id:end_row_id,
-                          start_col_id:end_col_id].flatten()
+                self.grid[start_row_id:end_row_id, start_col_id:end_col_id].flatten()
             )
             boxes.append(box)
         return np.array(boxes)
@@ -153,7 +160,8 @@ class SudokuPuzzle(object):
         Parameters
         ----------
         index : Tuple[int, int]
-            A tuple of two integers, representing the row and column indices of the cell in the grid.
+            A tuple of two integers, representing the row and column indices
+            of the cell in the grid.
 
         Returns
         -------
@@ -174,11 +182,14 @@ class SudokuPuzzle(object):
         """
         if isinstance(index, tuple) and len(index) == 2:
             i, j = index
-            if (1 <= i <= constant.NUMBER_OF_ROWS) and (1 <= j <= constant.NUMBER_OF_COLUMNS):
+            if (1 <= i <= constant.NUMBER_OF_ROWS) and (
+                1 <= j <= constant.NUMBER_OF_COLUMNS
+            ):
                 return self.grid[i, j]
             else:
                 raise IndexError(
-                    f"Index ({i}, {j}) is out of range. Valid indices are from (1,1) to ({constant.NUMBER_OF_ROWS},{constant.NUMBER_OF_COLUMNS})."
+                    f"Index ({i}, {j}) is out of range. Valid indices are from"
+                    f"(1,1) to ({constant.NUMBER_OF_ROWS},{constant.NUMBER_OF_COLUMNS})."
                 )
         else:
             raise TypeError("Invalid index. Use obj[i, j] syntax.")
@@ -234,7 +245,6 @@ class SudokuPuzzle(object):
         int
             The total number of candidates across all cells in the Sudoku grid.
         """
-        flattened_grid = self.grid.flatten()
         return sum(cell.number_of_candidates for cell in self.iterate_over_cells())
 
     def is_solved(self) -> bool:
@@ -272,7 +282,8 @@ class SudokuPuzzle(object):
         # raise error if box_id is out of range
         if box_id < 1 or box_id > constant.NUMBER_OF_BOXES:
             raise ValueError(
-                f"Box ID {box_id} is out of range. Must be between 1 and {constant.NUMBER_OF_BOXES}."
+                f"Box ID {box_id} is out of range. Must be between 1"
+                f" and {constant.NUMBER_OF_BOXES}."
             )
 
         return box_id
@@ -294,7 +305,7 @@ class SudokuPuzzle(object):
                 sudoku_cell = self[row_id, col_id]
                 cell_view = constant.CELL_IS_NOT_FILLED_TEMPLATE.copy()
                 if sudoku_cell.is_solved():
-                    cell_view[1, :] = ['(', sudoku_cell.value, ')']
+                    cell_view[1, :] = ["(", sudoku_cell.value, ")"]
                 else:
                     # Extract candidates to show in the cell view
                     cell_view = np.array(
@@ -308,13 +319,14 @@ class SudokuPuzzle(object):
                 template_row_id = row_id - 1
                 template_column_id = col_id - 1
                 numb_row_dividers = template_row_id
-                start_row_cell = ROW_OFFSET + \
-                    template_row_id * 3 + numb_row_dividers
+                start_row_cell = ROW_OFFSET + template_row_id * 3 + numb_row_dividers
                 numb_col_dividers = template_column_id + template_column_id // 3
-                start_col_cell = COLUMN_OFFSET + template_column_id * 3 + numb_col_dividers
+                start_col_cell = (
+                    COLUMN_OFFSET + template_column_id * 3 + numb_col_dividers
+                )
                 view_array[
-                    start_row_cell: start_row_cell + 3,
-                    start_col_cell: start_col_cell + 3,
+                    start_row_cell : start_row_cell + 3,
+                    start_col_cell : start_col_cell + 3,
                 ] = cell_view
 
         return "\n".join(["".join(row) for row in view_array])

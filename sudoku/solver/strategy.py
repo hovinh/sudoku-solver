@@ -1,7 +1,8 @@
+from typing import List, Tuple
+
+from sudoku import constant
 from sudoku.sudoku import SudokuPuzzle
 from sudoku.unit.cell import SudokuCell
-from typing import List, Tuple
-from sudoku import constant
 
 
 class SolvingStrategy:
@@ -16,8 +17,10 @@ class SolvingStrategy:
         sudoku : SudokuPuzzle
             The Sudoku puzzle to which the strategy is applied.
         """
-        raise NotImplementedError(
-            "This method should be overridden by subclasses.")
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class UniqueStrategy(SolvingStrategy):
@@ -33,7 +36,8 @@ class UniqueStrategy(SolvingStrategy):
 
         Step 2
         - For each unit (row, column, box), identify candidates that appear only once.
-        - If a candidate is unique to a cell within that unit, set that cell's value to the candidate.
+        - If a candidate is unique to a cell within that unit, set that cell's value
+        to the candidate.
 
         Parameters
         ----------
@@ -46,18 +50,21 @@ class UniqueStrategy(SolvingStrategy):
 
         # Find and fill hidden singles
         for unit in sudoku.iterate_over_all_units():
-            unique_candidates: List[Tuple[int, SudokuCell]
-                                    ] = unit.get_unique_candidates_and_belonging_cells()
+            unique_candidates: List[Tuple[int, SudokuCell]] = (
+                unit.get_unique_candidates_and_belonging_cells()
+            )
             for candidate, cell in unique_candidates:
                 cell.remove_all_candidates_except(candidate)
-                self.prune_solved_value_from_units_containing_cell(
-                    sudoku, cell)
+                self.prune_solved_value_from_units_containing_cell(sudoku, cell)
 
         return sudoku
 
-    def prune_solved_value_from_units_containing_cell(self, sudoku: SudokuPuzzle, cell: SudokuCell) -> None:
+    def prune_solved_value_from_units_containing_cell(
+        self, sudoku: SudokuPuzzle, cell: SudokuCell
+    ) -> None:
         """
-        Prunes solved values from the candidates of cells in the same row, column, and box.
+        Prunes solved values from the candidates of cells in the
+        same row, column, and box.
 
         Parameters
         ----------
@@ -66,7 +73,10 @@ class UniqueStrategy(SolvingStrategy):
         cell : SudokuCell
             The Sudoku cell whose solved value is to be pruned from its peers.
         """
-        def is_not_solved_and_contains_prunable_value(cell: SudokuCell, value: int) -> bool:
+
+        def is_not_solved_and_contains_prunable_value(
+            cell: SudokuCell, value: int
+        ) -> bool:
             return (not cell.is_solved()) and (value in cell.candidates)
 
         if cell.is_solved():
@@ -101,7 +111,8 @@ class HiddenCandidatePairStrategy(SolvingStrategy):
         """
         Applies the Hidden Candidate Pair strategy to the given Sudoku puzzle.
         Idea:
-            - Identify pairs of candidates that appear together in exactly two cells within a unit (row, column, or box).
+            - Identify pairs of candidates that appear together in exactly two
+            cells within a unit (row, column, or box).
             - If such a pair is found, remove all other candidates from those two cells.
 
         Parameters
@@ -131,11 +142,11 @@ class HiddenCandidatePairStrategy(SolvingStrategy):
             for candidate, cells in potential_hidden_pairs:
                 for other_candidate, other_cells in potential_hidden_pairs:
                     found_hidden_pair = (candidate != other_candidate) and (
-                        cells == other_cells)
+                        cells == other_cells
+                    )
                     if found_hidden_pair:
                         for cell in cells:
-                            cell.set_candidates(
-                                [candidate, other_candidate])
+                            cell.set_candidates([candidate, other_candidate])
 
         return sudoku
 
@@ -147,8 +158,10 @@ class HiddenCandidateTripletStrategy(SolvingStrategy):
         """
         Applies the Hidden Candidate Triplet strategy to the given Sudoku puzzle.
         Idea:
-            - Identify triplets of candidates that appear together in exactly three cells within a unit (row, column, or box).
-            - If such a triplet is found, remove all other candidates from those three cells.
+            - Identify triplets of candidates that appear together in exactly three
+            cells within a unit (row, column, or box).
+            - If such a triplet is found, remove all other candidates from
+            those three cells.
 
         Parameters
         ----------
@@ -173,18 +186,23 @@ class HiddenCandidateTripletStrategy(SolvingStrategy):
                 if len(cells) == 3  # appear in exactly three cells
             ]
 
-            # Check for triplets of candidates that appear together in the same three cells
+            # Check for triplets of candidates that appear together
+            # in the same three cells
             for candidate, cells in potential_hidden_triplets:
                 for other_candidate, other_cells in potential_hidden_triplets:
                     for another_candidate, another_cells in potential_hidden_triplets:
-                        different_candidates = len(
-                            set([candidate, other_candidate, another_candidate])) == 3
+                        different_candidates = (
+                            len(set([candidate, other_candidate, another_candidate]))
+                            == 3
+                        )
                         found_hidden_triplet = different_candidates and (
-                            cells == other_cells == another_cells)
+                            cells == other_cells == another_cells
+                        )
                         if found_hidden_triplet:
                             for cell in cells:
                                 cell.set_candidates(
-                                    [candidate, other_candidate, another_candidate])
+                                    [candidate, other_candidate, another_candidate]
+                                )
 
         return sudoku
 
@@ -196,8 +214,10 @@ class NakedPairStrategy(SolvingStrategy):
         """
         Applies the Naked Pair strategy to the given Sudoku puzzle.
         Idea:
-            - Identify pairs of cells within a unit (row, column, or box) that contain exactly the same two candidates.
-            - If such a pair is found, remove those two candidates from all other cells in that unit.
+            - Identify pairs of cells within a unit (row, column, or box) that
+            contain exactly the same two candidates.
+            - If such a pair is found, remove those two candidates from all
+            other cells in that unit.
 
         Parameters
         ----------
@@ -207,8 +227,7 @@ class NakedPairStrategy(SolvingStrategy):
         # For each unit (row, column, box)
         for unit in sudoku.iterate_over_all_units():
             # Find all cells with exactly two candidates
-            two_candidate_cells = [
-                cell for cell in unit if len(cell.candidates) == 2]
+            two_candidate_cells = [cell for cell in unit if len(cell.candidates) == 2]
 
             # Check for naked pairs
             for i in range(len(two_candidate_cells)):
@@ -216,7 +235,8 @@ class NakedPairStrategy(SolvingStrategy):
                     cell1 = two_candidate_cells[i]
                     cell2 = two_candidate_cells[j]
                     if cell1.candidates == cell2.candidates:
-                        # Found a naked pair; remove these candidates from other cells in the unit
+                        # Found a naked pair; remove these candidates
+                        # from other cells in the unit
                         pair_candidates = cell1.candidates
                         for peer_cell in unit:
                             if peer_cell not in (cell1, cell2):
@@ -233,8 +253,10 @@ class BoxLineInterpolationStrategy(SolvingStrategy):
         """
         Applies the Box-Line Interpolation strategy to the given Sudoku puzzle.
         Idea:
-            - For each box, check if a candidate is confined to a single row or column within that box.
-            - If so, remove that candidate from the cells in the corresponding row or column outside of that box.
+            - For each box, check if a candidate is confined to a single row
+            or column within that box.
+            - If so, remove that candidate from the cells in the corresponding row
+            or column outside of that box.
 
         Parameters
         ----------
@@ -257,14 +279,16 @@ class BoxLineInterpolationStrategy(SolvingStrategy):
                     rows = set(cell.row_id for cell in cells)
                     cols = set(cell.col_id for cell in cells)
 
-                    # If confined to a single row, remove this candidate from that row's cells outside the box
+                    # If confined to a single row, remove this candidate
+                    # from that row's cells outside the box
                     if len(rows) == 1:
                         row_id = rows.pop()
                         for cell in sudoku.rows[row_id]:
                             if cell not in cells:
                                 cell.remove_candidate(candidate)
 
-                    # If confined to a single column, remove this candidate from that column's cells outside the box
+                    # If confined to a single column, remove this candidate
+                    # from that column's cells outside the box
                     if len(cols) == 1:
                         col_id = cols.pop()
                         for cell in sudoku.columns[col_id]:
@@ -281,7 +305,8 @@ class BoxLineExtrapolationStrategy(SolvingStrategy):
         """
         Applies the Box-Line Extrapolation strategy to the given Sudoku puzzle.
         Idea:
-            - For each row and column, check if a candidate is confined to a single box within that row or column.
+            - For each row and column, check if a candidate is confined to a
+            single box within that row or column.
             - If so, remove that candidate from other cells within that box.
 
         Parameters
@@ -302,10 +327,12 @@ class BoxLineExtrapolationStrategy(SolvingStrategy):
 
             # Check each candidate's positions
             for candidate, cells in candidate_positions.items():
-                boxes = set(sudoku.to_box_id(
-                    cell.row_id, cell.col_id) for cell in cells)
+                boxes = set(
+                    sudoku.to_box_id(cell.row_id, cell.col_id) for cell in cells
+                )
 
-                # If confined to a single box, remove this candidate from other cells in that box
+                # If confined to a single box, remove this candidate
+                # from other cells in that box
                 if len(boxes) == 1:
                     box_id = boxes.pop()
                     box = sudoku.boxes[box_id]
@@ -326,10 +353,12 @@ class BoxLineExtrapolationStrategy(SolvingStrategy):
 
             # Check each candidate's positions
             for candidate, cells in candidate_positions.items():
-                boxes = set(sudoku.to_box_id(
-                    cell.row_id, cell.col_id) for cell in cells)
+                boxes = set(
+                    sudoku.to_box_id(cell.row_id, cell.col_id) for cell in cells
+                )
 
-                # If confined to a single box, remove this candidate from other cells in that box
+                # If confined to a single box, remove this candidate
+                # from other cells in that box
                 if len(boxes) == 1:
                     box_id = boxes.pop()
                     box = sudoku.boxes[box_id]
@@ -347,8 +376,10 @@ class RectangleCornerReductionsStrategy(SolvingStrategy):
         """
         Applies the Rectangle Corner Reduction strategy to the given Sudoku puzzle.
         Idea:
-            - Identify rectangles formed by four cells in two rows and two columns that share the same candidate.
-            - If such a rectangle is found, eliminate that candidate from the other cells in that two rows and two columns.
+            - Identify rectangles formed by four cells in two rows and two columns
+            that share the same candidate.
+            - If such a rectangle is found, eliminate that candidate from the other
+            cells in that two rows and two columns.
 
         Parameters
         ----------
@@ -365,10 +396,12 @@ class RectangleCornerReductionsStrategy(SolvingStrategy):
                 if (bottom_right_corner.row_id > top_left_corner.row_id) and (
                     bottom_right_corner.col_id > top_left_corner.col_id
                 ):
-                    top_right_corner = sudoku[top_left_corner.row_id,
-                                              bottom_right_corner.col_id]
-                    bottom_left_corner = sudoku[bottom_right_corner.row_id,
-                                                top_left_corner.col_id]
+                    top_right_corner = sudoku[
+                        top_left_corner.row_id, bottom_right_corner.col_id
+                    ]
+                    bottom_left_corner = sudoku[
+                        bottom_right_corner.row_id, top_left_corner.col_id
+                    ]
 
                     # Find common candidates among the four corners
                     common_candidates = set(top_left_corner.candidates).intersection(
@@ -378,19 +411,30 @@ class RectangleCornerReductionsStrategy(SolvingStrategy):
                     )
 
                     for candidate in common_candidates:
-                        # Eliminate candidate from other cells in the two rows and two columns
+                        # Eliminate candidate from other cells
+                        # in the two rows and two columns
                         for col_id in range(STARTING_COL_INDEX, ENDING_COL_INDEX + 1):
-                            if col_id not in (top_left_corner.col_id, bottom_right_corner.col_id):
-                                sudoku[top_left_corner.row_id,
-                                       col_id].remove_candidate(candidate)
-                                sudoku[bottom_right_corner.row_id,
-                                       col_id].remove_candidate(candidate)
+                            if col_id not in (
+                                top_left_corner.col_id,
+                                bottom_right_corner.col_id,
+                            ):
+                                sudoku[top_left_corner.row_id, col_id].remove_candidate(
+                                    candidate
+                                )
+                                sudoku[
+                                    bottom_right_corner.row_id, col_id
+                                ].remove_candidate(candidate)
 
                         for row_id in range(STARTING_ROW_INDEX, ENDING_ROW_INDEX + 1):
-                            if row_id not in (top_left_corner.row_id, bottom_right_corner.row_id):
+                            if row_id not in (
+                                top_left_corner.row_id,
+                                bottom_right_corner.row_id,
+                            ):
                                 sudoku[row_id, top_left_corner.col_id].remove_candidate(
-                                    candidate)
-                                sudoku[row_id, bottom_right_corner.col_id].remove_candidate(
-                                    candidate)
+                                    candidate
+                                )
+                                sudoku[
+                                    row_id, bottom_right_corner.col_id
+                                ].remove_candidate(candidate)
 
         return sudoku

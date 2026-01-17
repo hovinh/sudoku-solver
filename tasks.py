@@ -4,7 +4,7 @@ from invoke import task
 @task
 def lint(c):
     """Run code linters."""
-    c.run("flake8 sudoku_solver tests")
+    c.run("flake8 sudoku tests")
 
 
 @task
@@ -16,7 +16,7 @@ def test(c):
 @task
 def format(c):
     """Format code using Black."""
-    c.run("black sudoku_solver tests && isort sudoku_solver tests")
+    c.run("black sudoku tests && isort sudoku tests")
 
 
 @task(pre=[format, lint, test])

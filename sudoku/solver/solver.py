@@ -1,10 +1,14 @@
+from typing import List
+
 from logzero import logger
-from sudoku.sudoku import SudokuPuzzle
+
 from sudoku.solver.strategy import SolvingStrategy
-from typing import List, Any
+from sudoku.sudoku import SudokuPuzzle
 
 
 class SudokuSolver:
+    """Solves Sudoku puzzles using a sequence of solving strategies."""
+
     def __init__(self, strategies: List[SolvingStrategy] = []) -> None:
         self.strategies: List[SolvingStrategy] = strategies
 
@@ -27,7 +31,7 @@ class SudokuSolver:
             logger.info(f"Initial total candidates: {last_total_number_of_candidates}")
             logger.info(f"\n{puzzle}")
         while True:
-            # Try each strategy in sequence
+            # Try each strategy in sequence and
             strategy_index = 0
             current_total_number_of_candidates = last_total_number_of_candidates
 
@@ -41,7 +45,9 @@ class SudokuSolver:
                 if made_progress:
                     if verbose:
                         logger.info(
-                            f"Strategy {strategy.__class__.__name__} applied, reduced candidates from {last_total_number_of_candidates} to {current_total_number_of_candidates}"
+                            f"Strategy {strategy.__class__.__name__} applied,"
+                            f"reduced candidates from {last_total_number_of_candidates}"
+                            f" to {current_total_number_of_candidates}"
                         )
                         logger.info(f"\n{puzzle}")
                     break

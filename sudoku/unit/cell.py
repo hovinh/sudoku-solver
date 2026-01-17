@@ -1,4 +1,5 @@
 from typing import List
+
 from sudoku import constant
 
 
@@ -8,10 +9,13 @@ class SudokuCell(object):
     Args:
         row_id (int): The row index of the cell on the Sudoku grid.
         col_id (int): The column index of the cell on the Sudoku grid.
-        value (int, optional): The initial value of the cell. Defaults to constant.NO_SOLUTION_VALUE.
+        value (int, optional): The initial value of the cell.
+            Defaults to constant.NO_SOLUTION_VALUE.
     """
 
-    def __init__(self, row_id: int, col_id: int, value: int = constant.NO_SOLUTION_VALUE) -> None:
+    def __init__(
+        self, row_id: int, col_id: int, value: int = constant.NO_SOLUTION_VALUE
+    ) -> None:
         """
         Initializes SudokuCell instance.
 
@@ -30,8 +34,9 @@ class SudokuCell(object):
         else:
             raise TypeError(f"Type of value is {type(value)}. Must be int.")
         self._candidates = (
-            [self.value] if self.is_solved(
-            ) else constant.DEFAULT_POSSIBLE_CELL_VALUE.copy()
+            [self.value]
+            if self.is_solved()
+            else constant.DEFAULT_POSSIBLE_CELL_VALUE.copy()
         )
 
     @property
@@ -58,6 +63,7 @@ class SudokuCell(object):
     Candidates management.
     Caution: modifying candidates may change the cell's value.
     """
+
     @property
     def candidates(self):
         return self._candidates

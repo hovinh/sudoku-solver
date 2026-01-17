@@ -7,6 +7,9 @@ ipykernel
 # Numerical computations
 numpy
 
+# Visualization
+seaborn
+
 # Development and testing
 pytest
 black
