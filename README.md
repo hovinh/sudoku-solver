@@ -51,7 +51,7 @@ py -m ipykernel install --user --name=sudoku-kernel
 
 ## References
 
-Used dataset:  [sudoku17](https://web.archive.org/web/20131019184812if_/http://school.maths.uwa.edu.au/~gordon/sudokumin.php). 
+Used dataset:  [sudoku17](https://web.archive.org/web/20131019184812if_/http://school.maths.uwa.edu.au/~gordon/sudokumin.php), courtesy of Gordon Royle and The University of Western Australia
 
 ## Notebooks
 
